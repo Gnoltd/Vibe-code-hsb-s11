@@ -9,7 +9,7 @@ import { useBatchQR } from '@/hooks/useBatchQR'
 export function BatchPage() {
   const [fgColor] = useState('#003087')
   const [bgColor] = useState('#ffffff')
-  const logoSrc = '/logo-hsb.svg'
+  const logoSrc = '/logo-hsb.jpg'
   const size = 300
 
   const { rows, loadFile, generate, progress, status, stats, reset } = useBatchQR({

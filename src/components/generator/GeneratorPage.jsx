@@ -63,7 +63,7 @@ export function GeneratorPage() {
     const logoSrc = useLogo
       ? (bgColor.toLowerCase() === '#000000' || fgColor.toLowerCase() === '#ffffff'
           ? '/logo-hsb-white.svg'
-          : '/logo-hsb.svg')
+          : '/logo-hsb.jpg')
       : null
 
     await generate({ content, size, fgColor, bgColor, logoSrc })

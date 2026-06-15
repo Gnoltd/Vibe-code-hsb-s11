@@ -10,41 +10,42 @@ Respond ONLY with valid JSON and nothing else: {"safe": boolean, "reason": "stri
 BLOCK the content (safe: false) if it contains ANY of the following:
 
 1. OFFENSIVE LANGUAGE
-   - Insults, slurs, or degrading words targeting any person or group (e.g. "stupid", "idiot", "moron", "dumb", combined with intent to demean)
-   - Profanity or vulgar words in any language including Vietnamese (e.g. đồ ngu, thằng điên, con chó)
-   - Bullying language or personal attacks
-   - Harassment, threatening, or intimidating messages
+   - Insults, slurs, or degrading words (e.g. "stupid", "idiot", "moron", "dumb", "loser") used to demean
+   - Profanity or vulgar words in any language including Vietnamese (e.g. đồ ngu, thằng điên, con chó, đm, vcl)
+   - Bullying, harassment, threatening, or intimidating language
+   - Personal attacks on individuals or groups
 
 2. ADULT / 18+ CONTENT
-   - Sexual content, explicit material, pornography
-   - References to adult services or escort services
-   - Sexually suggestive URLs or keywords
+   - Sexual content, explicit material, pornography references
+   - Adult services, escort services, suggestive URLs or keywords
 
 3. HATE SPEECH
    - Discrimination based on race, religion, gender, sexual orientation, nationality, or disability
-   - Extremist or terrorist content
+   - Extremist, terrorist, or radicalizing content
 
 4. DANGEROUS / ILLEGAL CONTENT
-   - Drug references (buying, selling, consuming)
+   - Drug references (buying, selling, using)
    - Violence, self-harm, or suicide encouragement
-   - Illegal activities, scam or fraud instructions
+   - Scam, fraud, or illegal activity instructions
    - Instructions for weapons or harmful substances
 
 5. MALICIOUS URLS
    - Phishing domains mimicking real sites (e.g. g00gle.com, faceb00k.net)
-   - URLs with suspicious patterns: login credentials in URL, IP-based URLs with ports, shortened URLs pointing to known bad patterns
-   - Domains known for malware distribution
+   - URLs with login credentials embedded, suspicious IP:port patterns
+   - Domains known for malware or harmful content
 
-ALLOW (safe: true) everything else including:
-- Normal university content: course links, registration forms, schedules, maps
-- Professional contact info (email, phone)
-- WiFi credentials for campus networks
+ALLOW (safe: true) all normal content:
+- University links, course registrations, schedules, campus maps
+- Professional contact info (email, phone, WiFi)
 - Standard informational text in any language
+- Vietnamese language content that is professional and appropriate
 
-If safe: reason must be ""  and category must be "safe"
-If unsafe: reason must be a short English sentence explaining why. category must be one of: "offensive_language" | "adult_content" | "hate_speech" | "dangerous_content" | "malicious_url"
+Rules for your JSON response:
+- If SAFE: {"safe": true, "reason": "", "category": "safe"}
+- If UNSAFE: {"safe": false, "reason": "one short English sentence explaining why", "category": "<one of: offensive_language | adult_content | hate_speech | dangerous_content | malicious_url>"}
 
-Content to analyze: "${content.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"
+Content to analyze:
+${content}
 `.trim()
 
 export async function moderateContent(content) {
@@ -59,12 +60,11 @@ export async function moderateContent(content) {
         contents: [{ parts: [{ text: SAFETY_PROMPT(content) }] }],
         generationConfig: {
           temperature: 0,
-          maxOutputTokens: 150,
-          responseMimeType: 'application/json',
+          maxOutputTokens: 200,
         },
         safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
         ],
@@ -72,21 +72,28 @@ export async function moderateContent(content) {
     })
 
     if (!res.ok) {
-      console.warn('Gemini moderation API error:', res.status)
+      const errBody = await res.text().catch(() => '')
+      console.warn('Gemini API error', res.status, errBody)
       return { safe: true, reason: '', category: 'safe' }
     }
 
     const data = await res.json()
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    const cleaned = text.replace(/```json|```/g, '').trim()
-    const result = JSON.parse(cleaned)
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+    // Extract JSON from the response — handles both raw JSON and ```json fenced blocks
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      console.warn('Gemini returned no JSON:', rawText)
+      return { safe: true, reason: '', category: 'safe' }
+    }
+
+    const result = JSON.parse(jsonMatch[0])
     return {
-      safe: Boolean(result.safe),
+      safe: result.safe === true,
       reason: result.reason || '',
       category: result.category || 'safe',
     }
   } catch (err) {
-    // Fail open — never block generation due to moderation service issues
     console.warn('Gemini moderation failed, allowing content:', err)
     return { safe: true, reason: '', category: 'safe' }
   }
