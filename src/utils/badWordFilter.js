@@ -35,8 +35,14 @@ const VI_PHRASES = [
   'cave gọi', 'gái điếm', 'nhà thổ',
 ]
 
-// Vietnamese single-character rude words — only match when isolated (space/punctuation around them)
-const VI_ISOLATED = ['đụ', 'cặc', 'lồn', 'buồi', 'đĩ', 'điếm']
+// Vietnamese words — only match when isolated (surrounded by space/punctuation/start/end)
+// This blocks "ngu" alone but allows "Nguyen", blocks "điên" alone but allows it in place names
+const VI_ISOLATED = [
+  // Insults
+  'ngu', 'đần', 'ngốc', 'khùng',
+  // Sexual / vulgar
+  'đụ', 'cặc', 'lồn', 'buồi', 'đĩ', 'điếm', 'cave',
+]
 
 function getCategory(word) {
   if (/porn|xxx|nsfw|hentai|nude|naked|adult|onlyfans|escort|prostitut|cave|điếm|đĩ/i.test(word))
