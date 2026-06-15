@@ -55,7 +55,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI
   if (!apiKey) {
-    return res.status(200).json({ safe: true, reason: '', category: 'safe' })
+    return res.status(200).json({ safe: true, reason: '', category: 'safe', _debug: 'no_key' })
   }
 
   const { content } = req.body
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
 
     if (!geminiRes.ok) {
       console.warn('Gemini error', geminiRes.status)
-      return res.status(200).json({ safe: true, reason: '', category: 'safe' })
+      return res.status(200).json({ safe: true, reason: '', category: 'safe', _debug: `gemini_${geminiRes.status}` })
     }
 
     const data = await geminiRes.json()
