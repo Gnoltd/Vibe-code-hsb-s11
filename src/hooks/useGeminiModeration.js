@@ -6,7 +6,6 @@ export function useGeminiModeration() {
   const [status, setStatus] = useState('idle')
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('')
-  const hasGemini = Boolean(import.meta.env.VITE_GEMINI)
 
   const moderate = useCallback(async (content) => {
     if (!content.trim()) {
@@ -27,13 +26,7 @@ export function useGeminiModeration() {
       return false
     }
 
-    // Layer 2: Gemini AI for smarter checks (phishing URLs, nuanced content)
-    // If no key or API is down, we already passed layer 1 — allow the content
-    if (!hasGemini) {
-      setStatus('safe')
-      return true
-    }
-
+    // Layer 2: server-side Gemini AI (key is hidden, never exposed to browser)
     try {
       const result = await moderateContent(content)
       if (result.safe) {
@@ -46,11 +39,10 @@ export function useGeminiModeration() {
         return false
       }
     } catch {
-      // Gemini unavailable — layer 1 already passed, allow
       setStatus('safe')
       return true
     }
-  }, [hasGemini])
+  }, [])
 
   const reset = useCallback(() => {
     setStatus('idle')
@@ -58,5 +50,5 @@ export function useGeminiModeration() {
     setCategory('')
   }, [])
 
-  return { moderate, status, reason, category, hasGemini, reset }
+  return { moderate, status, reason, category, hasGemini: true, reset }
 }
