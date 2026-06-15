@@ -96,6 +96,7 @@ export default async function handler(req, res) {
       safe: result.safe === true,
       reason: result.reason || '',
       category: result.category || 'safe',
+      _debug: 'gemini_ok',
     })
   } catch {
     return res.status(200).json({ safe: true, reason: '', category: 'safe' })
