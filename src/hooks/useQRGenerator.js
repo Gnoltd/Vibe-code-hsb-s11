@@ -24,7 +24,7 @@ export function useQRGenerator() {
       })
 
       if (logoSrc) {
-        await embedLogo(canvas, logoSrc)
+        await embedLogo(canvas, logoSrc, bgColor)
       }
 
       setHasQR(true)
@@ -50,23 +50,31 @@ export function useQRGenerator() {
   return { canvasRef, generate, reset, isGenerating, hasQR, error }
 }
 
-function embedLogo(canvas, logoSrc) {
+function embedLogo(canvas, logoSrc, bgColor = '#ffffff') {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
       const ctx = canvas.getContext('2d')
-      const logoSize = canvas.width * 0.22
-      const x = (canvas.width - logoSize) / 2
-      const y = (canvas.height - logoSize) / 2
-      const pad = 6
 
-      // White padding square behind logo
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(x - pad, y - pad, logoSize + pad * 2, logoSize + pad * 2)
-      ctx.drawImage(img, x, y, logoSize, logoSize)
+      // Max bounding box = 26% of canvas, maintain natural aspect ratio
+      const maxBox = canvas.width * 0.26
+      const ratio = Math.min(maxBox / img.naturalWidth, maxBox / img.naturalHeight)
+      const logoW = Math.round(img.naturalWidth * ratio)
+      const logoH = Math.round(img.naturalHeight * ratio)
+      const x = Math.round((canvas.width - logoW) / 2)
+      const y = Math.round((canvas.height - logoH) / 2)
+      const pad = Math.round(canvas.width * 0.025) // ~7px at 300px
+
+      // Padding background matches bgColor so it blends with QR background
+      ctx.fillStyle = bgColor
+      ctx.beginPath()
+      ctx.roundRect(x - pad, y - pad, logoW + pad * 2, logoH + pad * 2, pad)
+      ctx.fill()
+
+      ctx.drawImage(img, x, y, logoW, logoH)
       resolve()
     }
-    img.onerror = () => resolve() // fail silently if logo can't load
+    img.onerror = () => resolve()
     img.src = logoSrc
   })
 }
@@ -79,6 +87,6 @@ export async function generateOffscreen({ content, size, fgColor, bgColor, logoS
     errorCorrectionLevel: 'H',
     color: { dark: fgColor, light: bgColor },
   })
-  if (logoSrc) await embedLogo(canvas, logoSrc)
+  if (logoSrc) await embedLogo(canvas, logoSrc, bgColor)
   return canvas
 }

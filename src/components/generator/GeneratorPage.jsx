@@ -13,6 +13,15 @@ import { buildContent } from '@/constants/contentTypes'
 import { DEFAULT_SIZE } from '@/constants/qrSizes'
 import { validateByType, getWarning } from '@/utils/validators'
 
+// Returns true if a hex colour is perceived as dark (luminance < 40%)
+function isDarkColor(hex) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 < 100
+}
+
 export function GeneratorPage() {
   const [activeType, setActiveType] = useState('url')
   const [fields, setFields] = useState({})
@@ -61,9 +70,7 @@ export function GeneratorPage() {
     }
 
     const logoSrc = useLogo
-      ? (bgColor.toLowerCase() === '#000000' || fgColor.toLowerCase() === '#ffffff'
-          ? '/logo-hsb-white.jpg'
-          : '/logo-hsb.jpg')
+      ? (isDarkColor(bgColor) ? '/logo-hsb-white.jpg' : '/logo-hsb.jpg')
       : null
 
     await generate({ content, size, fgColor, bgColor, logoSrc })
