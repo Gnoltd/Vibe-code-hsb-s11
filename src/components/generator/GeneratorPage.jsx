@@ -62,7 +62,7 @@ export function GeneratorPage() {
 
     const logoSrc = useLogo
       ? (bgColor.toLowerCase() === '#000000' || fgColor.toLowerCase() === '#ffffff'
-          ? '/logo-hsb-white.svg'
+          ? '/logo-hsb-white.jpg'
           : '/logo-hsb.jpg')
       : null
 
